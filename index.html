@@ -114,39 +114,38 @@
                         class="glass-input w-full px-4 py-3 rounded-xl text-base focus:ring-0">
                 </div>
 
-                <!-- 3. Carbohydrates / Bread Units Input -->
+                <!-- 3. Food / Bread Units Input -->
                 <div class="space-y-1.5">
-                    <label for="carbs" class="block text-sm font-medium text-slate-200 flex items-center justify-between">
+                    <label for="food" class="block text-sm font-medium text-slate-200 flex items-center justify-between">
                         <span class="flex items-center gap-2">
                             <i class="fa-solid fa-utensils text-amber-400 w-4"></i> Прием пищи / ХЕ
                         </span>
                         <span class="text-xs text-slate-400">Хлебные Единицы</span>
                     </label>
-                    <input type="number" step="0.1" id="carbs" placeholder="Например: 3.5 ХЕ"
+                    <input type="number" step="0.1" id="food" placeholder="Например: 3.5 ХЕ"
                         class="glass-input w-full px-4 py-3 rounded-xl text-base focus:ring-0">
                 </div>
 
-                <!-- 4. Blood Pressure Input -->
+                <!-- 4. Physical Activity Input -->
                 <div class="space-y-1.5">
-                    <label for="pressure" class="block text-sm font-medium text-slate-200 flex items-center justify-between">
+                    <label for="activity" class="block text-sm font-medium text-slate-200 flex items-center justify-between">
                         <span class="flex items-center gap-2">
                             <i class="fa-solid fa-weight text-emerald-400 w-4"></i> Физическая активность
                         </span>
-                        <span class="text-xs text-slate-400"></span>
                     </label>
-                    <input type="text" id="pressure" placeholder="Например: профессионал снятие наклеек с бананов"
+                    <input type="text" id="activity" placeholder="Например: снятие наклеек с бананов"
                         class="glass-input w-full px-4 py-3 rounded-xl text-base focus:ring-0">
                 </div>
 
-                <!-- 5. Weight Input -->
+                <!-- 5. Location Input (Text type, no arrows) -->
                 <div class="space-y-1.5">
-                    <label for="weight" class="block text-sm font-medium text-slate-200 flex items-center justify-between">
+                    <label for="location" class="block text-sm font-medium text-slate-200 flex items-center justify-between">
                         <span class="flex items-center gap-2">
                             <i class="fa-solid fa-school text-indigo-400 w-4"></i> Местоположение
                         </span>
                         <span class="text-xs text-slate-400">где мы? в лондоне</span>
                     </label>
-                    <input type="number" step="0.1" id="weight" placeholder="Например: школа, дом, вегас"
+                    <input type="text" id="location" placeholder="Например: школа, дом, вегас"
                         class="glass-input w-full px-4 py-3 rounded-xl text-base focus:ring-0">
                 </div>
 
@@ -155,7 +154,7 @@
                     <label for="notes" class="block text-sm font-medium text-slate-200 flex items-center gap-2">
                         <i class="fa-solid fa-pen-to-square text-purple-400 w-4"></i> Заметки / Самочувствие
                     </label>
-                    <textarea id="notes" rows="2" placeholder="кто раздрожает "
+                    <textarea id="notes" rows="2" placeholder="кто раздражает"
                         class="glass-input w-full px-4 py-3 rounded-xl text-base focus:ring-0 resize-none"></textarea>
                 </div>
 
@@ -186,7 +185,6 @@
             </div>
 
             <div id="history-list" class="space-y-3 max-h-80 overflow-y-auto pr-1">
-                <!-- Log entries will be inserted dynamically here -->
                 <p id="empty-history" class="text-sm text-slate-400 text-center py-4">
                     Сохраненные записи пока отсутствуют
                 </p>
@@ -196,29 +194,26 @@
     </main>
 
     <script>
-        // --- 1. LIVE CLOCK LOGIC ---
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxeb3dnnRZBBXpV58H79Pg5IwNXWeDyq9NpL1dPgqkoWjl53pdGTTfccZrqNItV_hY/exec';
+
+        // --- 1. CLOCK ---
         function updateClock() {
             const now = new Date();
-            
-            // Format time with padded zeros
             let hours = String(now.getHours()).padStart(2, '0');
             let minutes = String(now.getMinutes()).padStart(2, '0');
             let seconds = String(now.getSeconds()).padStart(2, '0');
             
-            // Update clock display
             document.getElementById('digital-clock').textContent = `${hours}:${minutes}:${seconds}`;
 
-            // Format date string (Russian locale)
             const options = { weekday: 'short', day: 'numeric', month: 'short' };
             const dateStr = now.toLocaleDateString('ru-RU', options).toUpperCase();
             document.getElementById('clock-date').textContent = dateStr;
         }
 
-        // Initialize clock instantly and update every second
         updateClock();
         setInterval(updateClock, 1000);
 
-        // --- 2. LOGS & STORAGE MANAGEMENT ---
+        // --- 2. LOCAL STORAGE ---
         let logs = JSON.parse(localStorage.getItem('health_logs') || '[]');
 
         function saveLogsToStorage() {
@@ -236,7 +231,7 @@
             historyList.innerHTML = logs.map((item, index) => `
                 <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-3.5 space-y-2 text-sm">
                     <div class="flex items-center justify-between text-xs text-sky-400 border-b border-slate-800/80 pb-2">
-                        <span class="font-semibold"><i class="fa-regular fa-clock mr-1"></i>${item.time}</span>
+                        <span class="font-semibold"><i class="fa-regular fa-clock mr-1"></i>${item.timestring}</span>
                         <button onclick="deleteLog(${index})" class="text-slate-500 hover:text-rose-400 transition">
                             <i class="fa-solid fa-trash"></i>
                         </button>
@@ -244,49 +239,72 @@
                     <div class="grid grid-cols-2 gap-2 text-xs">
                         <div class="text-slate-300"><span class="text-slate-400">Сахар:</span> <b class="text-rose-300 font-semibold">${item.sugar} ммоль/л</b></div>
                         <div class="text-slate-300"><span class="text-slate-400">Инсулин:</span> <b class="text-sky-300 font-semibold">${item.insulin} ЕД</b></div>
-                        ${item.carbs ? `<div class="text-slate-300"><span class="text-slate-400">ХЕ:</span> <b>${item.carbs}</b></div>` : ''}
-                        ${item.pressure ? `<div class="text-slate-300"><span class="text-slate-400">Давление:</span> <b>${item.pressure}</b></div>` : ''}
-                        ${item.weight ? `<div class="text-slate-300"><span class="text-slate-400">Вес:</span> <b>${item.weight} кг</b></div>` : ''}
+                        ${item.food ? `<div class="text-slate-300"><span class="text-slate-400">ХЕ:</span> <b>${item.food}</b></div>` : ''}
+                        ${item.activity ? `<div class="text-slate-300"><span class="text-slate-400">Активность:</span> <b>${item.activity}</b></div>` : ''}
+                        ${item.location ? `<div class="text-slate-300"><span class="text-slate-400">Локация:</span> <b>${item.location}</b></div>` : ''}
                     </div>
                     ${item.notes ? `<div class="text-xs text-slate-400 italic bg-slate-800/40 p-2 rounded-lg mt-1 border border-slate-800">${item.notes}</div>` : ''}
                 </div>
             `).join('');
         }
 
-        // --- 3. FORM HANDLERS ---
-        function handleSave(event) {
+        // --- 3. SAVE HANDLER ---
+        async function handleSave(event) {
             event.preventDefault();
+
+            const submitBtn = event.target.querySelector('button[type="submit"]');
+            const originalBtnContent = submitBtn.innerHTML;
+            
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Сохранение...`;
 
             const sugar = document.getElementById('sugar').value;
             const insulin = document.getElementById('insulin').value;
-            const carbs = document.getElementById('carbs').value;
-            const pressure = document.getElementById('pressure').value;
-            const weight = document.getElementById('weight').value;
+            const food = document.getElementById('food').value;
+            const activity = document.getElementById('activity').value;
+            const location = document.getElementById('location').value;
             const notes = document.getElementById('notes').value;
 
             const now = new Date();
-            const timeString = `${now.toLocaleDateString('ru-RU')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            const timestring = `${now.toLocaleDateString('ru-RU')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
             const newEntry = {
-                time: timeString,
+                timestring,
                 sugar,
                 insulin,
-                carbs,
-                pressure,
-                weight,
+                food,
+                activity,
+                location,
                 notes
             };
 
-            // Add new log to the start of the list
-            logs.unshift(newEntry);
-            saveLogsToStorage();
-            renderHistory();
+            try {
+                // Отправка в Google Таблицы
+                if (GOOGLE_SCRIPT_URL) {
+                    await fetch(GOOGLE_SCRIPT_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(newEntry)
+                    });
+                }
 
-            // Clear form inputs
-            resetForm();
+                // Сохранение в LocalStorage
+                logs.unshift(newEntry);
+                saveLogsToStorage();
+                renderHistory();
 
-            // Show confirmation toast
-            showToast('Данные успешно сохранены!');
+                resetForm();
+                showToast('Данные успешно сохранены!');
+            } catch (error) {
+                console.error('Ошибка при отправке:', error);
+                showToast('Ошибка отправки в таблицу');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnContent;
+            }
         }
 
         function resetForm() {
@@ -301,7 +319,7 @@
 
         function clearHistory() {
             if (logs.length === 0) return;
-            if (confirm('Вы уверены, что хотите удалить всю историю?')) {
+            if (confirm('Удалить всю локальную историю?')) {
                 logs = [];
                 saveLogsToStorage();
                 renderHistory();
@@ -317,7 +335,6 @@
             }, 3000);
         }
 
-        // Render initial logs on load
         renderHistory();
     </script>
 </body>
