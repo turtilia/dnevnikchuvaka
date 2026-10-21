@@ -55,6 +55,18 @@
         .glow-effect {
             box-shadow: 0 0 25px rgba(56, 189, 248, 0.15);
         }
+
+        /* Custom Scrollbar for image modals and lists */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(56, 189, 248, 0.3);
+            border-radius: 3px;
+        }
     </style>
 </head>
 <body class="pb-12 pt-28 px-4 flex flex-col items-center">
@@ -70,18 +82,41 @@
     <!-- Main Content Container -->
     <main class="w-full max-w-lg space-y-6">
         
-        <!-- Header Title -->
-        <div class="text-center space-y-1">
+        <!-- Header Title with Camera Button -->
+        <div class="text-center space-y-2">
             <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-white flex items-center justify-center gap-2">
-                <i class="fa-solid font-bold heart-pulse text-sky-400"></i> Дневник  
+                <i class="fa-solid fa-heart-pulse text-sky-400"></i> Дневник  
             </h1>
-            <p class="text-sm text-slate-400">чуваки меня так вставило</p>
+            <div class="flex items-center justify-center gap-3">
+                <p class="text-sm text-slate-400">чуваки меня так вставило</p>
+                <!-- Round Camera Button -->
+                <button type="button" 
+                        onclick="openCameraModal()" 
+                        title="Сделать фото еды" 
+                        class="w-9 h-9 rounded-full bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white flex items-center justify-center shadow-lg shadow-sky-500/30 transition hover:scale-105 active:scale-95 border border-sky-300/30">
+                    <i class="fa-solid fa-camera text-sm"></i>
+                </button>
+            </div>
         </div>
 
         <!-- Notification Toast Box -->
         <div id="toast" class="hidden glass-panel border-l-4 border-emerald-500 p-4 rounded-xl text-emerald-300 text-sm flex items-center gap-3 transition-all">
             <i class="fa-solid fa-circle-check text-lg"></i>
             <span id="toast-message">Запись успешно сохранена!</span>
+        </div>
+
+        <!-- Attached Photo Preview Banner (When Photo is Captured/Selected) -->
+        <div id="photo-preview-container" class="hidden glass-panel rounded-2xl p-3 flex items-center justify-between border border-sky-500/30">
+            <div class="flex items-center gap-3 overflow-hidden">
+                <img id="photo-preview-img" src="" alt="Еда" class="w-14 h-14 object-cover rounded-xl border border-slate-700">
+                <div class="truncate">
+                    <p class="text-xs font-semibold text-sky-400">Фото прикреплено</p>
+                    <p class="text-[11px] text-slate-400 truncate">Будет отправлено с записью</p>
+                </div>
+            </div>
+            <button type="button" onclick="removeAttachedPhoto()" class="p-2 text-slate-400 hover:text-rose-400 transition">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
         </div>
 
         <!-- Form Card Container -->
@@ -128,7 +163,7 @@
                 <div class="space-y-1.5">
                     <label for="activity" class="block text-sm font-medium text-slate-200 flex items-center justify-between">
                         <span class="flex items-center gap-2">
-                            <i class="fa-solid fa-weight text-emerald-400 w-4"></i> Физическая активность
+                            <i class="fa-solid fa-person-running text-emerald-400 w-4"></i> Физическая активность
                         </span>
                     </label>
                     <input type="text" id="activity" placeholder="Например: снятие наклеек с бананов"
@@ -139,7 +174,7 @@
                 <div class="space-y-1.5">
                     <label for="location" class="block text-sm font-medium text-slate-200 flex items-center justify-between">
                         <span class="flex items-center gap-2">
-                            <i class="fa-solid fa-school text-indigo-400 w-4"></i> Местоположение
+                            <i class="fa-solid fa-location-dot text-indigo-400 w-4"></i> Местоположение
                         </span>
                         <span class="text-xs text-slate-400">где мы? в лондоне</span>
                     </label>
@@ -155,6 +190,9 @@
                     <textarea id="notes" rows="2" placeholder="кто раздражает"
                         class="glass-input w-full px-4 py-3 rounded-xl text-base focus:ring-0 resize-none"></textarea>
                 </div>
+
+                <!-- Hidden file input fallback for camera upload -->
+                <input type="file" id="camera-file-input" accept="image/*" capture="environment" class="hidden" onchange="handleFileInputChange(event)">
 
                 <!-- Action Buttons -->
                 <div class="pt-3 grid grid-cols-2 gap-3">
@@ -191,8 +229,59 @@
 
     </main>
 
+    <!-- Camera / Photo Modal -->
+    <div id="camera-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-panel max-w-md w-full rounded-3xl p-5 space-y-4 border border-slate-700">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-camera text-sky-400"></i> Сфотографировать еду
+                </h3>
+                <button type="button" onclick="closeCameraModal()" class="text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Live Video Viewport -->
+            <div class="relative bg-black rounded-2xl overflow-hidden aspect-square flex items-center justify-center border border-slate-800">
+                <video id="camera-video" autoplay playsinline class="w-full h-full object-cover hidden"></video>
+                <div id="camera-placeholder" class="text-center p-6 space-y-3">
+                    <i class="fa-solid fa-video-slash text-3xl text-slate-600"></i>
+                    <p class="text-xs text-slate-400">Камера не запущена</p>
+                </div>
+            </div>
+
+            <!-- Hidden canvas to render photo -->
+            <canvas id="camera-canvas" class="hidden"></canvas>
+
+            <!-- Modal Action Buttons -->
+            <div class="grid grid-cols-2 gap-3 pt-1">
+                <button type="button" onclick="triggerNativeCamera()" 
+                        class="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center gap-2 border border-slate-700 transition">
+                    <i class="fa-solid fa-folder-open text-sky-400"></i> Загрузить файл
+                </button>
+                <button type="button" id="snap-btn" onclick="takeSnapshot()" disabled
+                        class="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition">
+                    <i class="fa-solid fa-circle-dot"></i> Сделать снимок
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image View Modal (Enlarge photo from history) -->
+    <div id="image-view-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4" onclick="closeImageViewModal()">
+        <div class="relative max-w-lg w-full" onclick="event.stopPropagation()">
+            <button onclick="closeImageViewModal()" class="absolute -top-10 right-0 text-white text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <img id="enlarged-image" src="" alt="Фото еды" class="w-full max-h-[80vh] object-contain rounded-2xl border border-slate-700 shadow-2xl">
+        </div>
+    </div>
+
     <script>
         const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz_HH1UBE_8gMa0Pi05q8faNNackmsSN_vqUf7ehvbAeoG2HlS2LAhRwEIyTrhY3-kQFw/exec';
+
+        let attachedPhotoBase64 = null;
+        let videoStream = null;
 
         // --- 1. CLOCK ---
         function updateClock() {
@@ -214,7 +303,140 @@
         updateClock();
         setInterval(updateClock, 1000);
 
-        // --- 2. LOCAL STORAGE ---
+        // --- 2. CAMERA AND PHOTO HANDLERS ---
+        async function openCameraModal() {
+            const modal = document.getElementById('camera-modal');
+            const video = document.getElementById('camera-video');
+            const placeholder = document.getElementById('camera-placeholder');
+            const snapBtn = document.getElementById('snap-btn');
+
+            modal.classList.remove('hidden');
+
+            try {
+                // Request back camera on mobile devices if available
+                videoStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: { ideal: 'environment' } },
+                    audio: false
+                });
+                video.srcObject = videoStream;
+                video.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+                snapBtn.disabled = false;
+            } catch (err) {
+                console.warn('Не удалось запустить веб-камеру напрямую:', err);
+                video.classList.add('hidden');
+                placeholder.classList.remove('hidden');
+                snapBtn.disabled = true;
+            }
+        }
+
+        function closeCameraModal() {
+            const modal = document.getElementById('camera-modal');
+            modal.classList.add('hidden');
+
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+        }
+
+        function takeSnapshot() {
+            const video = document.getElementById('camera-video');
+            const canvas = document.getElementById('camera-canvas');
+            const ctx = canvas.getContext('2d');
+
+            if (!video.videoWidth) return;
+
+            // Resize photo to optimize memory and upload payload
+            const maxDimension = 800;
+            let width = video.videoWidth;
+            let height = video.videoHeight;
+
+            if (width > height && width > maxDimension) {
+                height = Math.round((height * maxDimension) / width);
+                width = maxDimension;
+            } else if (height > maxDimension) {
+                width = Math.round((width * maxDimension) / height);
+                height = maxDimension;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(video, 0, 0, width, height);
+
+            attachedPhotoBase64 = canvas.toDataURL('image/jpeg', 0.8);
+            showPhotoPreview(attachedPhotoBase64);
+            closeCameraModal();
+            showToast('Фотография сделана!');
+        }
+
+        function triggerNativeCamera() {
+            closeCameraModal();
+            document.getElementById('camera-file-input').click();
+        }
+
+        function handleFileInputChange(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+
+                    const maxDimension = 800;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height && width > maxDimension) {
+                        height = Math.round((height * maxDimension) / width);
+                        width = maxDimension;
+                    } else if (height > maxDimension) {
+                        width = Math.round((width * maxDimension) / height);
+                        height = maxDimension;
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    attachedPhotoBase64 = canvas.toDataURL('image/jpeg', 0.8);
+                    showPhotoPreview(attachedPhotoBase64);
+                    showToast('Фото успешно загружено!');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function showPhotoPreview(base64) {
+            const container = document.getElementById('photo-preview-container');
+            const img = document.getElementById('photo-preview-img');
+            img.src = base64;
+            container.classList.remove('hidden');
+        }
+
+        function removeAttachedPhoto() {
+            attachedPhotoBase64 = null;
+            document.getElementById('photo-preview-container').classList.add('hidden');
+            document.getElementById('photo-preview-img').src = '';
+            document.getElementById('camera-file-input').value = '';
+        }
+
+        function viewEnlargedImage(src) {
+            const modal = document.getElementById('image-view-modal');
+            const img = document.getElementById('enlarged-image');
+            img.src = src;
+            modal.classList.remove('hidden');
+        }
+
+        function closeImageViewModal() {
+            document.getElementById('image-view-modal').classList.add('hidden');
+        }
+
+        // --- 3. LOCAL STORAGE & HISTORY ---
         let logs = JSON.parse(localStorage.getItem('health_logs') || '[]');
 
         function saveLogsToStorage() {
@@ -245,12 +467,18 @@
                         ${item.activity ? `<div class="text-slate-300"><span class="text-slate-400">Активность:</span> <b>${item.activity}</b></div>` : ''}
                         ${item.location ? `<div class="text-slate-300"><span class="text-slate-400">Локация:</span> <b>${item.location}</b></div>` : ''}
                     </div>
+                    ${item.photo ? `
+                        <div class="mt-2 pt-2 border-t border-slate-800/60 flex items-center gap-3">
+                            <img src="${item.photo}" onclick="viewEnlargedImage('${item.photo}')" class="w-12 h-12 object-cover rounded-lg border border-slate-700 cursor-pointer hover:opacity-80 transition" title="Нажмите, чтобы увеличить">
+                            <span class="text-[11px] text-slate-400">Нажмите на фото для просмотра</span>
+                        </div>
+                    ` : ''}
                     ${item.notes ? `<div class="text-xs text-slate-400 italic bg-slate-800/40 p-2 rounded-lg mt-1 border border-slate-800">${item.notes}</div>` : ''}
                 </div>
             `).join('');
         }
 
-        // --- 3. SAVE HANDLER ---
+        // --- 4. SAVE HANDLER ---
         async function handleSave(event) {
             event.preventDefault();
 
@@ -277,12 +505,12 @@
                 food,
                 activity,
                 location,
-                notes
+                notes,
+                photo: attachedPhotoBase64 || ''
             };
 
             try {
                 if (GOOGLE_SCRIPT_URL) {
-                    // Кодирование данных для надежной отправки формы
                     const params = new URLSearchParams();
                     for (const key in newEntry) {
                         params.append(key, newEntry[key]);
@@ -295,7 +523,7 @@
                     });
                 }
 
-                // Сохранение в LocalStorage
+                // LocalStorage save
                 logs.unshift(newEntry);
                 saveLogsToStorage();
                 renderHistory();
@@ -313,6 +541,7 @@
 
         function resetForm() {
             document.getElementById('health-form').reset();
+            removeAttachedPhoto();
         }
 
         function deleteLog(index) {
