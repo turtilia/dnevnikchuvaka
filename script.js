@@ -1,4 +1,4 @@
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzWTxEbM_jXijCNcX6iqhjt0DsF4dICEuZqtb4pk9Hwf75PvQ5kkQkqOUBIhVeadcjv/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwFSds3jxyVSlLoIiWklv0GtYiN5tU8aOzpo3CTCZrTA-1II6BKYPQiEeXYDaWafn1K5w/exec';
 
 // --- 1. LIVE CLOCK ---
 function updateClock() {
