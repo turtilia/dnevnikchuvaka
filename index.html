@@ -278,7 +278,7 @@
     </div>
 
     <script>
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyPFcIWtQoYdj0r1jpqaWPsrQ3ioOLcXEB452Y05xw72Fj3vVN0KXTHL_d0q6qJHbOfDw/exec';
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzsTJI4mOXTCL6nQKXxckTPePZZeSE51AT5FugUMCD58F-QCa04qBvjfkUCVfYzWh2dAQ/exec';
 
         let attachedPhotoBase64 = null;
         let videoStream = null;
@@ -509,19 +509,27 @@
                 photo: attachedPhotoBase64 || ''
             };
 
+            // Замените этот фрагмент в handleSave():
             try {
                 if (GOOGLE_SCRIPT_URL) {
-                    const params = new URLSearchParams();
-                    for (const key in newEntry) {
-                        params.append(key, newEntry[key]);
-                    }
-
                     await fetch(GOOGLE_SCRIPT_URL, {
                         method: 'POST',
-                        mode: 'no-cors',
-                        body: params
+                        // Отправляем данные в формате JSON
+                        body: JSON.stringify(newEntry)
                     });
                 }
+            
+                // LocalStorage save
+                logs.unshift(newEntry);
+                saveLogsToStorage();
+                renderHistory();
+            
+                resetForm();
+                showToast('Данные успешно сохранены!');
+            } catch (error) {
+                console.error('Ошибка при отправке:', error);
+                showToast('Ошибка отправки в таблицу');
+            }
 
                 // LocalStorage save
                 logs.unshift(newEntry);
