@@ -4,7 +4,7 @@
         let attachedPhotoBase64 = null;
         let videoStream = null;
 
-        // --- 1. CLOCK ---
+        
         function updateClock() {
             const now = new Date();
             let hours = String(now.getHours()).padStart(2, '0');
@@ -24,7 +24,6 @@
         updateClock();
         setInterval(updateClock, 1000);
 
-        // --- 2. CAMERA AND PHOTO HANDLERS ---
         async function openCameraModal() {
             const modal = document.getElementById('camera-modal');
             const video = document.getElementById('camera-video');
@@ -157,7 +156,6 @@
             document.getElementById('image-view-modal').classList.add('hidden');
         }
 
-        // --- 3. LOCAL STORAGE & HISTORY ---
         let logs = JSON.parse(localStorage.getItem('health_logs') || '[]');
 
         function saveLogsToStorage() {
@@ -199,7 +197,6 @@
             `).join('');
         }
 
-        // --- 4. SAVE HANDLER ---
         async function handleSave(event) {
             event.preventDefault();
 
@@ -230,7 +227,6 @@
                 photo: attachedPhotoBase64 || ''
             };
 
-            // Замените этот фрагмент в handleSave():
             try {
                 if (GOOGLE_SCRIPT_URL) {
                     await fetch(GOOGLE_SCRIPT_URL, {
@@ -240,7 +236,6 @@
                     });
                 }
             
-                // LocalStorage save
                 logs.unshift(newEntry);
                 saveLogsToStorage();
                 renderHistory();
@@ -252,7 +247,6 @@
                 showToast('Ошибка отправки в таблицу');
             }
 
-                // LocalStorage save
                 logs.unshift(newEntry);
                 saveLogsToStorage();
                 renderHistory();
