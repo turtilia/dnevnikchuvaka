@@ -293,4 +293,4 @@
         }
 
         renderHistory();
-    </script>
+</script>
